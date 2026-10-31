@@ -2,7 +2,7 @@
 """
 :bat
 setlocal
-title Roblox GUI Overlay v2
+title Roblox GUI Overlay v3
 set "PY="
 python --version >nul 2>nul && set "PY=python" && set "PYW=pythonw"
 if not defined PY py --version >nul 2>nul && set "PY=py" && set "PYW=pyw"
@@ -1076,6 +1076,8 @@ class Ui:
         return cv.im
 
     def d_top(self, cv, hv, modal):
+        if self.new:
+            return self.d_top_new(cv, hv, modal)
         hl = (255, 255, 255, 30)
         cv.circle(39, 33, 44, TOPC)
         if hv == "logo":
@@ -1215,8 +1217,64 @@ class Ui:
         cv.blit(sub, ax - 2, ay)
         self.reg("chat_scroll", ax, ay, aw, ah, cur="arrow", sc="chat")
 
+    _SPRD = {
+        "logo": ("L", "iVBORw0KGgoAAAANSUhEUgAAABcAAAAYCAAAAAA0FzmpAAAA/ElEQVR42n2QsUtCURjFf10bGhychZaGoEAdGoQmn1ZLNbmro2P5Nzg0VXsNIQSuRtFQggYOuoZQ0NASBDkEFiEJp+Hynj6vdKbD7+Oe7zsX5isCwPny12DOMCXp5Szv8ANJksbdqhfiVwr0fVtJBvxTIb1flgDIyNG2AbLOwp87A3gO72CANAA3xYtXn98D7NvIMpBoWL8BcGr9KkBTkvQBQF+S9GQXSpLqYGAdgBbA7hIATYCijfntVHMcW78CUJu0Gdriz8AiucnZUYIYk4g7rR4ANtujmb8Z+/O9k8dp3pt+W6i9+fxoJjZ5eD2UpB2AhfBsK+utxfhHf5Max777LDtDAAAAAElFTkSuQmCC"),
+        "menu": ("L", "iVBORw0KGgoAAAANSUhEUgAAABgAAAAQCAAAAAApT+BJAAAARElEQVR42mNgwAku/McC1jGwMEzTwqL6KAM9ACNDmg4W4YNrGRguYnPuejq5ylABi/C1mwwMz7G56igDI4OaLBYdexkAUTZG+4YUG30AAAAASUVORK5CYII="),
+        "chat": ("L", "iVBORw0KGgoAAAANSUhEUgAAABcAAAAVCAAAAACIiSp3AAAAoElEQVR42o2QsQ6CMBRFj8TBL3EhYWE0xhAGfsk/0AnWrqx+gR/hRmKcmZ1hMOY6tCUKbeJd2ndf33k3XUG2ZqZXBzy01B32CmmXLCAAbJIk6BOx8ZhjZ8/s5IzSLspdmduy9O9vEQ7Pyxuq7dRwHF0Bzj7/xKHSXzmj/hC0BzD9OPu0sTeunRaN85oi/Z2sJUn1EmkkmdCuVm042+Hr/gEVTHxFCWEG0QAAAABJRU5ErkJggg=="),
+        "shield": ("RGBA", "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAACHklEQVR42gXBT0hTcQDA8e/bnvvjps81F3P2j1QUIhX/HMrIeeriHyKoQ8NqZSFJrEgLSSoSlRAhyIuERbm0yILcCJ0gaB3qlCJ0MDwtBbdZbs+h7m2/Ph/pSEW1SKdSyBmN5M4ullwFxe5AJ0lsxSIk43GUnGwykkw6k0FOp1KMPBviYIGT8No6HwNBpqYCaFqKpsZGzp9tweV0klBVvO0dyDtJFacjnw7fHRRFoc17mTPueuKJBAcKXYy8GGVpaYnJ9xPoRBqdTs7i18oKdXUnCYVCDD0fpqS4iNrqKl6+8ROY+kyDu56NSISthIqcreTxaXqWU5XlHK+pYeDxI/wT7/iztk6n7xYIQavHw/iHSczWXORcu4OFuTl+/vjO8OBTvoRmGRl9hUBgMBrp7rrL79VVgjMhcvP3oxMC9FkG7t324XK50Ov0gEASArPZRDwe5+GTPjRNQydJyNubUWoqK6iqKKez+wE997tIaSnC4TDXLrXS09tHaUkxBYcOEwgGoaC4VLz2vxW9/QPCZLGKE6cbxOLiolheXhaeK16RY7OLCxc9YuHrN1FYVCJkbW+PY2VljPn91LvdtF9vIxKNEo3FuHHVi8loZH5+HluegsNmQzZarKxvRBgc6CehbhOcnmFsYpxkQqWpuYVzzc34Om4ST6jsZkA6WlkrRCaN1SATjW1iMFuw7rOjl2XUv5skt/5hNMjojSYyAv4DoPPhoZcnZXgAAAAASUVORK5CYII="),
+        "wave": ("RGBA", "iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAACpklEQVR42mWRTWhUZxSGn++79854JzaZmSSidiqN0dSZmKBQ4g/BJCRtKXUjmkULFVoKpavQbpxNcApZTMGFCRZcCGJA0FIFhVootf8ItrRWREUjxMQGE5KYSdPcmblz73dcDLYmfVeHw/twzsur9h54+yiAICUREAVDB8kXPDj2tcopqtrY/WFOaQtv6jbR5EuE3hOsVLqtmyodnP5I5Xc1q76uFmF7OsL0TNh9b0b9ALA0ceOmX5jaXdfSCVrjrn8FbURKIlJKRM2G5tqQnldtgnkfjHDkkEXClVYBetpkYOSdaeavnRxV2sabHkMDNDdK/uJgZGB5MUQqhuimGOVJD8fVnHhX+hFIJRXtLyv2ZTg8d+MyTk2iCqciFRwxxDe7+H8VUY5Gr7UJFny2bI3w/l6TuzclAPS2a8qL08Mm8NFKgedGeXS3CFph10eozJZxGqIEhQoSCB/st/G8Krxnm6J2jdn4+KdTOa2Az96zcZtqKE0VsWodpBwifvV9CQxaKz7u9AkNOBa8sVP3A2it4OyPIesSiofLNsYLiLwYI/QClKXQayzK4/+Q2eFi6Wpt/Z0KpahmHr1qsncmhW0tDo8nfFBgxyMAmGKIjtko+1njsKlRkUmpnBaB2ra38p+eCyn50LAlxvMKlypYdQ6rlaoHLcALTR08mtfDn18Jia7yKUsjgfkfvOiBXtvUkS/NjRNP9wxcuGayv96XFSYr7hAsVFbsij7ceijDOtH6GvN/XiGR7iWe6csPfclCYfn5y4qlOncFfPZ7Q9FnQS9N/E5duovJb0aIxlPUdA0mPvnudf72/jM3JvW/86XrhjNXTQ7ASiZjbjS+obO+/U0K939m5vr57OzE2Ldf/WYoVdgsolj04I8HwvHLIV/8YrICgUDwFKs8EPU5ZdTQAAAAAElFTkSuQmCC"),
+    }
+    _SPRC = {}
+
+    def _spr(self, cv, name, cx, cy, color=None):
+        im = Ui._SPRC.get(name)
+        if im is None:
+            mode, data = Ui._SPRD[name]
+            im = Image.open(io.BytesIO(base64.b64decode(data))).convert(mode)
+            Ui._SPRC[name] = im
+        w, h = im.size
+        x = cx - w / 2.0
+        y = cy - h / 2.0
+        X = cv.p(x)
+        Y = cv.p(y)
+        Wd = max(1, cv.p(x + w) - X)
+        Hd = max(1, cv.p(y + h) - Y)
+        r = im if (Wd, Hd) == im.size else im.resize((Wd, Hd), Image.LANCZOS)
+        if im.mode == "L":
+            r = colorize(r, color)
+        cv.comp(r, X, Y)
+
+    def d_top_new(self, cv, hv, modal):
+        dim = 0.38 if modal else 1.0
+        INK = (29, 31, 39, 255)
+        ink = (29, 31, 39, int(255 * dim))
+        WH = (247, 248, 247, 255)
+        cv.circle(28, 23, 44, WH)
+        if hv == "logo":
+            cv.circle(28, 23, 44, (0, 0, 0, 20))
+        self._spr(cv, "logo", 28.7, 23.5, INK)
+        self.reg("logo", 6, 1, 44, 44)
+        cv.rr(58, 1, 97, 44, 22, WH)
+        cx = [85, 128.5]
+        names = ["tb_menu", "tb_chat"]
+        for i, n in enumerate(names):
+            if i == 0 and self.dd:
+                cv.circle(cx[i], 23, 38, (0, 0, 0, 28))
+            elif hv == n and (not modal or i == 0):
+                cv.circle(cx[i], 23, 38, (0, 0, 0, 18))
+        if self.dd:
+            cv.icon("x", cx[0], 23, 24, INK)
+        else:
+            self._spr(cv, "menu", cx[0], 23.5, INK)
+        self._spr(cv, "chat", cx[1], 24, ink if self.chat_vis else (29, 31, 39, int(255 * dim * 0.45)))
+        for i, n in enumerate(names):
+            if modal and i > 0:
+                self.reg("tb_dead", cx[i] - 22, 1, 44, 44, cur="arrow")
+            else:
+                self.reg(n, cx[i] - 22, 1, 44, 44)
+
     def d_chat_new(self, cv, hv, S):
-        x, y, w, h = 9, 62, 473, 265
+        x, y, w, h = 0, 51, 473, 265
         self.reg("chat_zone", x, y, w, h, cur="arrow")
         cv.rr(x, y, w, h, 8, (30, 36, 40, 165))
         th = 39
@@ -1227,75 +1285,90 @@ class Ui:
         for i, (key, label) in enumerate((("here", "Here"), ("global", "Global"), ("friends", "Friends"))):
             sel = self.ctab == key
             col = WHITE if sel else ((205, 207, 210, 255) if hv == "chat_tab_" + key else (150, 152, 156, 255))
-            cv.text(x + i * tw + tw / 2.0, y + 19, label, "b", 15, col, anchor="m")
+            cv.text(x + i * tw + tw / 2.0, y + 20.5, label, "b", 15, col, anchor="m")
             if i > 0:
                 cv.rr(x + i * tw, y + 8, 1, th - 16, 0, (255, 255, 255, 28))
             if sel:
                 cv.rr(x + i * tw, y + th - 3, tw, 3, 0, WHITE)
             self.reg("chat_tab_" + key, x + i * tw, y, tw, th)
-        ih = 40
-        iy = y + h - 8 - ih
-        ix = x + 8
-        iw = w - 16
-        cv.rr(ix, iy, iw, ih, 20, (28, 30, 33, 250))
+        ih = 38
+        iy = y + h - 9 - ih
+        ix = x + 5
+        iw = w - 13
+        cv.rr(ix, iy, iw, ih, 19, (28, 30, 33, 250))
         self.reg("chat_input", ix, iy, iw, ih, cur="ibeam")
-        avail = iw - 22 - 56
+        avail = iw - 23 - 50
         sub = Cv(avail + 4, ih, S)
-        cw = text_w(self.text[: self.caret], "m", 15, S)
+        cw = text_w(self.text[: self.caret], "m", 14.5, S)
         off = max(0.0, cw - avail)
         if self.text:
-            sub.text(-off, ih / 2.0, self.text, "m", 15, WHITE)
+            sub.text(-off, ih / 2.0, self.text, "m", 14.5, WHITE)
         elif not self.focus:
-            sub.text(0, ih / 2.0, "To chat click here or press / key", "m", 15, (150, 153, 158, 255))
+            sub.text(0, ih / 2.0, "To chat click here or press / key", "m", 14.5, (150, 153, 158, 255))
         if self.focus and self.caret_on:
             sub.rr(cw - off, ih / 2.0 - 9, 1.5, 18, 0, WHITE)
-        cv.blit(sub, ix + 22, iy)
+        cv.blit(sub, ix + 23, iy)
         if self.text:
             cv.circle(ix + iw - 20, iy + ih / 2.0, 32, BLUE)
             if hv == "chat_send":
                 cv.circle(ix + iw - 20, iy + ih / 2.0, 32, (255, 255, 255, 30))
             cv.icon("arrow_up", ix + iw - 20, iy + ih / 2.0, 22, WHITE)
-            self.reg("chat_send", ix + iw - 36, iy + 4, 32, 32)
+            self.reg("chat_send", ix + iw - 36, iy + 3, 32, 32)
         else:
-            cv.icon("mic", ix + iw - 26, iy + ih / 2.0, 22, (190, 192, 196, 255))
+            cv.icon("mic", ix + iw - 19, iy + ih / 2.0, 20, (225, 227, 230, 255))
         if self.ctab == "here":
             for i in range(3):
-                cv.circle(x + w - 30 + i * 6, y + th + 14, 2.6, (226, 228, 230, 235))
-            self.reg("chat_dots", x + w - 44, y + th + 2, 34, 26)
+                cv.circle(x + w - 30 + i * 6, y + 64, 2.6, (226, 228, 230, 235))
+            self.reg("chat_dots", x + w - 44, y + th + 12, 34, 26)
             msgs = self.msgs
         elif self.ctab == "global":
             msgs = [{"sys": True, "text": "No messages yet."}]
         else:
             msgs = [{"sys": True, "text": "No friends are in this server."}]
-        ax = x + 8
-        ay = y + th + 6
-        aw = w - 16 - 24
+        ax = x + 5
+        ay = y + th + 5
+        aw = w - 10 - 26
         ah = (iy - 6) - ay
-        lines = self.lines(aw, S, msgs)
-        ch = len(lines) * 20
+        rows = []
+        for m in msgs:
+            t = m.get("text", "")
+            ico = None
+            if m.get("sys"):
+                if t.startswith("Roblox summarizes"):
+                    ico = "shield"
+                elif t.startswith("Say hi"):
+                    ico = "wave"
+            ind = 17 if ico else 0
+            for j, ln in enumerate(self.lines(aw - ind, S, [m])):
+                rows.append((ln, ind, ico if j == 0 else None))
+        ch = len(rows) * 16
         mx = max(0, ch - ah)
         self.smax["chat"] = mx
         cur = self.scr.get("chat")
         off = mx if cur is None else min(cur, mx)
         sub = Cv(aw + 8, ah, S)
-        for i, ln in enumerate(lines):
-            ly = i * 20 - off + 10
+        for i, (ln, ind, ico) in enumerate(rows):
+            ly = i * 16 - off + 8
             if ly < -12 or ly > ah + 12:
                 continue
+            if ico:
+                sx, dy = (9, 1) if ico == "shield" else (10.5, -0.5)
+                self._spr(sub, ico, sx, ly + dy)
             for wd, wt, col, lx in ln:
-                sub.text(lx + 2, ly, wd, wt, 14, col)
+                sub.text(lx + 2 + ind, ly, wd, wt, 14, col)
         cv.blit(sub, ax - 2, ay)
         self.reg("chat_scroll", ax, ay, aw, ah, cur="arrow", sc="chat")
 
     def d_plist_new(self, cv, hv, S):
-        pw, ph = 164, 64
-        px = cv.w - 6 - pw
-        py = 62
-        cv.rr(px, py, pw, ph, 8, (40, 58, 70, 235))
+        pw, ph = 165, 64
+        px = cv.w - pw
+        py = 51
+        cv.rr(px, py, pw, ph, 8, (24, 26, 30, 190))
         if hv == "pl_row":
             cv.rr(px, py + 19, pw, 36, 0, (255, 255, 255, 22))
-        cv.icon("x", px + 11, py + 10, 14, WHITE)
-        cv.text(px + pw / 2.0, py + 38, self.display, "m", 15, WHITE, anchor="m", maxw=pw - 24)
+        cv.icon("x", px + 11, py + 13, 14, WHITE)
+        cv.icon("hammer", px + 20, py + 39, 24, (215, 217, 222, 255))
+        cv.text(px + 40, py + 39, self.display, "m", 14.5, (232, 234, 237, 255), maxw=pw - 50)
         self.reg("pl_close", px, py, 36, 19)
         self.reg("pl_row", px, py + 19, pw, 36)
         self.reg("pl_panel", px, py, pw, ph, cur="arrow")
@@ -1317,8 +1390,8 @@ class Ui:
         self.plist_rect = (px, py, pw, ph)
 
     def d_selfview(self, cv, W, S):
-        x = W - 6 - 150
-        y = 62 + 64 + 8
+        x = W - (0 if self.new else 6) - 150
+        y = (51 if self.new else 62) + 64 + 8
         cv.rr(x, y, 150, 150, 10, (21, 23, 26, 215))
         cv.rr(x + 8, y + 8, 134, 134, 8, (46, 52, 60, 230))
         img = self.scaled(self.head, "headsv", 134, 91, S)
@@ -1327,8 +1400,8 @@ class Ui:
 
     def d_popup(self, cv, W, hv, S):
         pw, ph = 302, 121
-        x = W - 6 - 166 - 4 - pw
-        y = 80
+        x = W - (0 if self.new else 6) - (165 if self.new else 166) - 4 - pw
+        y = 69 if self.new else 80
         cv.rr(x, y, pw, ph, 10, PANEL)
         hd = Cv(pw, 75, S)
         hd.rr(0, 0, pw, 75, 0, (35, 36, 39, 232))
@@ -1370,7 +1443,7 @@ class Ui:
         self.reg("toast", x, y, w, h, cur="arrow")
 
     def d_dd(self, cv, H, hv, S):
-        x, y, w = 17, 59, 193
+        x, y, w = (6, 49, 193) if self.new else (17, 59, 193)
         content = len(MENU_ITEMS) * 56 + 12
         h = max(120, min(content, H - 59 - 60))
         cv.rr(x, y, w, h, 12, (22, 22, 25, 246))
